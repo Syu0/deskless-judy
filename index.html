@@ -587,26 +587,26 @@
       <p class="price-sub">≈ ₩100,000 · Instant delivery after purchase</p>
 
       <div class="pricing-card price-includes">
-        <div class="price-item"><span class="check">✓</span> Config templates (openclaw.json + auth-profiles.json)</div>
-        <div class="price-item"><span class="check">✓</span> Key swap checklist</div>
-        <div class="price-item"><span class="check">✓</span> Agent OS documents (soul, constitution, judgment criteria)</div>
-        <div class="price-item"><span class="check">✓</span> Anthropic plugin guide (all 11 plugins)</div>
+        <div class="price-item"><span class="check">✓</span> openclaw.json — real config template (correct structure)</div>
+        <div class="price-item"><span class="check">✓</span> Step-by-step setup checklist</div>
+        <div class="price-item"><span class="check">✓</span> Agent OS documents (soul, mind, judgment criteria)</div>
+        <div class="price-item"><span class="check">✓</span> Skills reference — pre-bundled capabilities guide</div>
         <div class="price-item"><span class="check">✓</span> Future updates included</div>
       </div>
 
       <div class="payment-section">
         <!-- Global payment (Lemon Squeezy) -->
-        <a href="LEMON_SQUEEZY_CHECKOUT_URL" class="pay-btn pay-btn-global" target="_blank">
+        <a href="https://meaningfuljy.gumroad.com/l/juglg" class="pay-btn pay-btn-global" target="_blank">
           🌍 Pay with Card (Global)
         </a>
 
         <div class="pay-divider">or</div>
 
-        <!-- Korean payment (Toss Payments — coming soon) -->
-        <button class="pay-btn pay-btn-kr" onclick="alert('Korean payment coming soon. Please use the global option above.')">
-          🇰🇷 한국 카드 / 계좌이체
+        <!-- Korean payment (Toss Payments) -->
+        <button id="toss-pay-btn" class="pay-btn pay-btn-kr" onclick="requestTossPayment()">
+          🇰🇷 한국 카드 / 계좌이체 (토스페이먼츠)
         </button>
-        <p class="pay-note">Korean payment (Toss Payments) — coming soon</p>
+        <p class="pay-note" id="toss-pay-note">카드 · 계좌이체 · 간편결제 · 무통장입금 지원</p>
       </div>
     </div>
   </section>
@@ -675,13 +675,64 @@
     <p>Made by <a href="https://twitter.com/deskless_judy" target="_blank">@deskless_judy</a> · Questions? DM on Twitter</p>
   </footer>
 
+  <!--
+    Toss Payments SDK
+    클라이언트 키를 아래 TOSS_CLIENT_KEY에 설정하면 결제가 활성화됩니다.
+    대시보드: https://developers.tosspayments.com/
+    테스트 키: test_ck_... / 실제 키: live_ck_...
+  -->
+  <script src="https://js.tosspayments.com/v2/standard"></script>
   <script>
+    // ── Toss Payments 설정 ────────────────────────────────────���─────────
+    // TODO: 실제 클라이언트 키로 교체
+    const TOSS_CLIENT_KEY = "test_ck_REPLACE_WITH_YOUR_CLIENT_KEY";
+    const TOSS_AMOUNT = 100000;           // 100,000원
+    const TOSS_ORDER_NAME = "OpenClaw Autonomous Agent Starter Pack";
+    const SUCCESS_URL = window.location.origin + "/store/payment-success.html";
+    const FAIL_URL    = window.location.origin + "/store/payment-fail.html";
+
+    async function requestTossPayment() {
+      const btn = document.getElementById("toss-pay-btn");
+      const note = document.getElementById("toss-pay-note");
+
+      if (TOSS_CLIENT_KEY.includes("REPLACE_WITH")) {
+        // 클라이언트 키 미설정 시 안내
+        note.style.color = "#ef4444";
+        note.textContent = "결제 준비 중입니다. 준비되면 이용 가능합니다.";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "결제창 로딩 중…";
+
+      try {
+        const tossPayments = TossPayments(TOSS_CLIENT_KEY);
+        const payment = tossPayments.payment({ customerKey: TossPayments.ANONYMOUS });
+
+        await payment.requestPayment({
+          method: "CARD",
+          amount: { currency: "KRW", value: TOSS_AMOUNT },
+          orderId: "OC_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+          orderName: TOSS_ORDER_NAME,
+          successUrl: SUCCESS_URL,
+          failUrl: FAIL_URL,
+        });
+      } catch (err) {
+        console.error("Toss Payments error:", err);
+        btn.disabled = false;
+        btn.textContent = "🇰🇷 한국 카드 / 계좌이체 (토스페이먼츠)";
+        note.style.color = "#ef4444";
+        note.textContent = "결제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+      }
+    }
+
+    // ── FAQ toggle ───────────────────────────────────────────────────��──
     function toggleFaq(btn) {
       const item = btn.closest('.faq-item');
       item.classList.toggle('open');
     }
 
-    // Smooth scroll for anchor links
+    // ── Smooth scroll ───────────────────────────────────────────────────
     document.querySelectorAll('a[href^="#"]').forEach(a => {
       a.addEventListener('click', e => {
         e.preventDefault();
